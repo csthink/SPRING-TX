@@ -1,0 +1,67 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- spring IOC 开启全局扫描 -->
+    <context:component-scan base-package="com.csthink"/>
+
+    <!-- 数据库连接属性配置文件 -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:database.properties"/>
+    </bean>
+    <!-- 数据源配置使用 DBCP 数据库连接池 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${driver}"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="${username}"/>
+        <property name="password" value="${password}"/>
+    </bean>
+    <!-- jdbcTemplate -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 声明式事务 -->
+    <!-- JDBC 事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 配置事务增强，通过事务通知的方式实现事务 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <!-- 切入点中哪些方法需要过滤 -->
+        <tx:attributes>
+            <!-- 可选属性配置
+              name:方法名称，将匹配的方法注入事务管理，可用通配符
+              propagation:事务传播行为
+              isolation:事务隔离级别，默认为“DEFAULT”
+              read-only:是否只读，默认为 false，表示不是只读
+              timeout:事务超时时间，单位为秒，默认 -1，表示事务超时将依赖于底层事务系统
+              rollback-for:需要触发回滚的异常定义，可定义多个，以逗号","分割，默认任何 RuntimeException 都将导致事务回滚，而任何 Checked Exception 将不导致事务回滚
+              no-rollback-for:不被触发进行回滚的 Exception(s)；可定义多个，以逗号","分割
+             -->
+            <!-- 设置进行事务操作的方法匹配规则 -->
+            <!-- 以 get/find/search 开头的所有方法设置为只读事务 -->
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="search*" read-only="true"/>
+            <!-- 其它方法使用默认事务设置 -->
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+    <!-- 切面配置 -->
+    <aop:config>
+        <!-- 切入点配置: com.csthink.service 包下任意类任意个数的参数的方法都会被过滤 -->
+        <aop:pointcut id="txPointcut" expression="execution(* com.csthink.service.*.*(..))"/>
+        <!-- 通知与切入点关联 -->
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut"/>
+    </aop:config>
+</beans>
