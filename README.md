@@ -121,18 +121,96 @@ Spring 有5种隔离级别，默认的是 ISOLATION_DEFAULT(使用数据库的�
 ![事务运行状态接口](https://images.csthink.com/Carbonize%202019-04-20%20at%2014.46.07.png)
 
 ### 事务的实现方式
-#### 编程式事务
-##### 开发准备
-###### 数据库准备
-我选择的是一个员工表，表结构如下
+#### 开发准备
+所有的源码都托管在了 github 上 : https://github.com/csthink/SPRING-TX 
+
+##### 数据库准备
+编程式事务我选择的是一个员工表，表结构如下
 ![employee 员工表](https://images.csthink.com/Carbonize%202019-04-20%20at%2022.29.22.png)
+
+声明式事务我使用的也是一个员工表和一个部门表，员工表用于测试 tx 拦截器实现声明式事务，部门表用于测试注解方式实现的声明式事务
+
+![employee2 员工表](https://images.csthink.com/Carbonize%202019-04-21%20at%2008.13.34.png)
+
+![department 部门表](https://images.csthink.com/Carbonize%202019-04-21%20at%2008.14.15.png)
+
 
 ##### java 文件
 这里准备了一个 Employee 表的实体文件，一个操作 Employee 表的 Dao 接口以及其实现类，还有一个相应的测试类文件
-###### Maven 依赖
+
+##### Maven 依赖
 ![编程式事务依赖](https://images.csthink.com/Carbonize%202019-04-20%20at%2022.23.50.png)
-###### Spring 配置文件
+
+声明式事务依赖，需要在编程式事务依赖的基础上添加两个依赖，一个是 DBCP 数据库连接池的依赖，数据源配置的时候，可以不使用，也可以直接使用 C3P0 或直接使用 jdbc 的数据源配置即可，声明式事务的 tx 拦截器的方式需要配合 AOP 实现，所以需要添加 AspectJ 的依赖
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.csthink</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <dependencies>
+        <!-- Spring 基础依赖,包含了 spring-core spring-beans spring-aop spring-expression spring-tx -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>4.3.1.RELEASE</version>
+        </dependency>
+        <!-- MySQL 驱动支持 -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.47</version>
+        </dependency>
+        <!-- C3P0 数据库连接池 -->
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.4</version>
+        </dependency>
+        <!-- DBCP 数据库连接池 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+        <!-- Spring JDBC Template 所需的依赖 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>4.3.1.RELEASE</version>
+        </dependency>
+        <!-- Junit 单元测试依赖 -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+        <!-- Spring 与 Junit 的整合 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>4.3.1.RELEASE</version>
+        </dependency>
+        <!-- Spring 基于 AspectJ 开发 AOP 的依赖 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
+            <version>4.3.1.RELEASE</version>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+##### Spring 配置文件
 ![编程式事务 xml 配置 Spring.xml](https://images.csthink.com/Carbonize%202019-04-20%20at%2022.26.12.png)
+
+#### 编程式事务
 
 ##### 使用事务管理器方式实现编程式事务 ( PlatformTransactionManager)
 ![事务管理器方式](https://images.csthink.com/Carbonize%202019-04-20%20at%2022.54.54.png)
